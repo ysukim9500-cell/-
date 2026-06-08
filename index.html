@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ATEC Driving">
+<title>ATEC Driving</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
+<style>
+  :root{ --red:#D70051; --gray:#5A666F; --grayd:#3a444c; --bg:#f2f4f6; --line:#e6e9ed; }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;background:var(--bg);color:var(--grayd)}
+  .hidden{display:none!important}
+  header{background:var(--red);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:50}
+  header .t{font-size:18px;font-weight:700;flex:1}
+  header button{background:rgba(255,255,255,.2);color:#fff;border:0;border-radius:8px;padding:7px 10px;font-size:13px}
+  .wrap{max-width:560px;margin:0 auto;padding:16px}
+  .card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+  .row{display:flex;gap:10px}
+  .row>*{flex:1}
+  label{display:block;font-size:12px;color:var(--gray);margin:10px 0 4px}
+  input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:15px;background:#fff}
+  input:focus,select:focus{outline:none;border-color:var(--red)}
+  .btn{display:block;width:100%;background:var(--red);color:#fff;border:0;border-radius:12px;padding:14px;font-size:16px;font-weight:700;margin-top:14px}
+  .btn.sec{background:#fff;color:var(--gray);border:1px solid var(--line)}
+  .btn.gray{background:var(--gray)}
+  .link{color:var(--grayd);text-align:center;margin-top:14px;font-weight:600}
+  .stat{background:#fff;border-radius:14px;padding:14px;text-align:center}
+  .stat .l{font-size:11px;color:var(--gray)} .stat .v{font-size:17px;font-weight:700;margin-top:4px}
+  .sec-title{color:var(--red);font-weight:700;font-size:14px;margin-bottom:10px}
+  .tripitem{display:flex;justify-content:space-between;align-items:center;padding:14px;border-bottom:1px solid var(--line);cursor:pointer}
+  .tripitem:last-child{border-bottom:0}
+  .tripitem .d{font-size:13px;color:var(--gray)} .tripitem .a{font-size:14px;font-weight:600;margin-top:2px}
+  .tripitem .km{font-weight:700;color:var(--red)}
+  .monthbar{display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:10px}
+  .monthbar button{background:#fff;border:1px solid var(--line);border-radius:8px;width:38px;height:38px;font-size:18px}
+  .monthbar .m{font-weight:700;font-size:16px}
+  #map{height:300px;border-radius:14px;overflow:hidden;background:#dde6f0}
+  .fab{position:fixed;right:18px;bottom:22px;background:var(--red);color:#fff;border:0;border-radius:30px;padding:14px 20px;font-size:15px;font-weight:700;box-shadow:0 4px 14px rgba(215,0,81,.4)}
+  .err{color:var(--red);font-size:13px;margin-top:10px;white-space:pre-line}
+  .muted{color:var(--gray);font-size:12px;margin-top:8px;line-height:1.5}
+  .kv{display:flex;padding:6px 0} .kv .k{width:90px;color:var(--gray);font-size:13px} .kv .v{flex:1;font-size:14px;font-weight:600}
+  .pill{display:inline-block;background:rgba(215,0,81,.1);color:var(--red);border-radius:20px;padding:4px 10px;font-size:12px;font-weight:700}
+  .chk{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px}
+  .chk input{width:auto}
+  .pchk{display:flex;align-items:center;gap:10px;padding:12px 14px;border:2px solid #e5e7eb;border-radius:12px;font-size:15px;font-weight:600;color:#444;cursor:pointer;user-select:none;background:#fafafa}
+  .pchk input{width:20px;height:20px;accent-color:var(--red);margin:0}
+  .pchk:has(input:checked){border-color:var(--red);background:#fff0f4;color:var(--red)}
+  .center{text-align:center}
+  .score{font-size:30px;font-weight:700}
+  .ac{position:relative}
+  .ac input{padding-right:36px}
+  .clearx{position:absolute;right:8px;top:50%;transform:translateY(-50%);color:#aab;font-size:14px;cursor:pointer;z-index:6;padding:6px 8px;line-height:1}
+  .clearx:active{color:var(--red)}
+  .aclist{position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--line);border-radius:0 0 10px 10px;z-index:40;max-height:240px;overflow:auto;display:none;box-shadow:0 6px 16px rgba(0,0,0,.12)}
+  .aclist div{padding:10px 12px;border-bottom:1px solid var(--line);font-size:14px;cursor:pointer}
+  .aclist div:last-child{border-bottom:0}
+  .aclist small{color:var(--gray);display:block;font-size:12px;margin-top:2px}
+  #pickerMap{height:62vh;width:100%}
+  .pbar{padding:12px;background:#fff;border-bottom:1px solid var(--line)}
+  .pbar input{margin:0}
+  .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+  .modal .box{background:#fff;border-radius:16px;padding:18px;max-width:360px;width:100%}
+</style>
+</head>
+<body>
+
+<!-- ===== 로그인 ===== -->
+<div id="loginView">
+  <div class="wrap" style="padding-top:60px">
+    <div class="center" style="margin-bottom:8px">
+      <div style="font-size:28px;font-weight:800;color:var(--gray)">ATEC <span style="color:var(--red)">mobility</span></div>
+      <div style="color:var(--grayd);font-weight:700;margin-top:6px">ATEC Driving 로그인</div>
+    </div>
+    <div class="card">
+      <label>아이디</label><input id="li_user" autocapitalize="off" autocomplete="username">
+      <label>비밀번호</label><input id="li_pw" type="password" autocomplete="current-password">
+      <div class="chk"><input type="checkbox" id="li_remember" checked><span>아이디·비밀번호 저장</span></div>
+      <div id="li_err" class="err"></div>
+      <button class="btn" onclick="doLogin()">로그인</button>
+      <div class="link" onclick="show('signupView')">회원가입</div>
+    </div>
+    <div class="muted center">※ 자동 운행기록은 안드로이드 앱에서만 가능합니다. 이 웹은 조회·수동입력용입니다.</div>
+  </div>
+</div>
+
+<!-- ===== 회원가입 ===== -->
+<div id="signupView" class="hidden">
+  <header><div class="t">회원가입</div><button onclick="show('loginView')">닫기</button></header>
+  <div class="wrap">
+    <div class="card">
+      <label>아이디</label><input id="su_user" autocapitalize="off">
+      <label>비밀번호</label><input id="su_pw" type="password">
+      <label>비밀번호 확인</label><input id="su_pw2" type="password">
+      <label>차량번호 (예: 12가3456)</label><input id="su_plate">
+      <label>이름</label><input id="su_name">
+      <div id="su_err" class="err"></div>
+      <div class="muted">※ 아이디와 차량번호는 중복 등록할 수 없습니다.</div>
+      <div style="font-weight:700;color:var(--red);margin-top:12px">개인정보처리방침</div>
+      <div style="max-height:170px;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:10px;font-size:12px;color:var(--grayd);white-space:pre-line;line-height:1.5;margin-top:6px">ATEC Driving 개인정보처리방침 (운영: 에이텍모빌리티)
+
+1. 수집 항목 및 목적
+ · 아이디, 비밀번호(암호화 저장), 이름, 차량번호 → 회원 식별·로그인, 운행기록 작성
+ · 위치정보(GPS 좌표·이동경로) → 운행 거리·경로·시간 측정 및 운행기록부 작성
+ · 운행기록(일시·출발/도착지·계기판·목적 등) → 차량 운행일지·보고서 생성
+ · 소속·부서·직책·차종 등 프로필 → 운행기록부 양식 자동 작성
+
+2. 위치정보 이용
+ '운행기록 시작'을 누른 동안에만 위치를 수집하며, 운행 종료 시 즉시 중단합니다.
+
+3. 보관 및 처리위탁
+ 데이터는 클라우드(Supabase)에 저장되며, 지도·주소 표시를 위해 카카오/VWorld/OpenStreetMap을 이용합니다.
+
+4. 보유 및 파기
+ 회원 탈퇴 또는 목적 달성 시 지체 없이 파기합니다(법령상 보존 필요 시 해당 기간 보관).
+
+5. 이용자 권리
+ 열람·수정·삭제를 요청할 수 있으며, 기록 삭제·로그아웃 또는 문의처로 요청할 수 있습니다.
+
+6. 제3자 제공
+ 법령 근거가 있는 경우를 제외하고 제3자에게 제공·판매하지 않습니다.
+
+7. 안전성 확보
+ 비밀번호는 단방향 암호화(해시), 통신은 HTTPS 암호화를 사용합니다.
+
+8. 문의처
+ 에이텍모빌리티 수도권버스지원팀 · ysukim@atecmobility.com</div>
+      <div class="chk" style="margin-top:8px"><input type="checkbox" id="su_agree"><span>[필수] 위 개인정보처리방침을 확인하고 동의합니다</span></div>
+      <button class="btn" onclick="doSignup()">가입하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 메인 ===== -->
+<div id="appView" class="hidden">
+  <header>
+    <div class="t">ATEC Driving</div>
+    <button onclick="openProfile()">프로필</button>
+    <button onclick="openExportDialog()">엑셀</button>
+    <button onclick="logout()">로그아웃</button>
+  </header>
+  <div class="wrap">
+    <div class="card" style="padding:12px 16px">
+      <div style="font-weight:700" id="me_name">-</div>
+      <div style="color:var(--gray);font-size:14px" id="me_plate">-</div>
+    </div>
+    <!-- 운행 체크인: 출발·도착 두 번 탭 (운행 중 화면 꺼도 됨) -->
+    <div class="card" id="drv_card" style="text-align:center;padding:14px 16px">
+      <div id="drv_idle">
+        <button class="btn" style="font-size:16px;padding:13px" onclick="openStartDlg()">▶ 운행 시작 (현재 위치 기록)</button>
+        <div class="muted" style="font-size:11.5px;margin-top:7px">출발할 때 한 번, 도착해서 한 번만 누르면 거리·경로가 자동 계산됩니다. 운행 중엔 화면을 꺼도 됩니다.</div>
+      </div>
+      <div id="drv_active" style="display:none">
+        <div style="font-weight:700;color:var(--red);font-size:15px" id="drv_info">운행 중</div>
+        <div class="muted" id="drv_sub" style="font-size:12px;margin:5px 0 10px"></div>
+        <button class="btn" style="background:#4b5563" onclick="openStopDlg()">■ 운행 종료 (도착)</button>
+        <div style="margin-top:8px"><a href="#" onclick="cancelActive();return false" style="color:#9aa3ae;font-size:12px">운행 취소</a></div>
+      </div>
+    </div>
+    <div class="monthbar">
+      <button onclick="changeMonth(-1)">‹</button>
+      <div class="m" id="monthLabel">-</div>
+      <button onclick="changeMonth(1)">›</button>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center;margin:0 0 8px;flex-wrap:wrap">
+      <select id="sum_p" onchange="renderList()" style="width:auto;padding:6px 8px;font-size:12px;border:1px solid var(--line);border-radius:8px;background:#fff">
+        <option value="">전체 목적</option><option>일반업무</option><option>출퇴근</option><option>비업무용</option>
+      </select>
+      <input type="date" id="sum_s" onchange="renderList()" style="width:auto;padding:5px 6px;font-size:12px">
+      <span style="color:#888;font-size:12px">~</span>
+      <input type="date" id="sum_e" onchange="renderList()" style="width:auto;padding:5px 6px;font-size:12px">
+      <button onclick="setv('sum_s','');setv('sum_e','');document.getElementById('sum_p').value='';renderList()" style="width:auto;padding:6px 10px;font-size:12px;background:#eee;color:#555;border-radius:8px;border:none">초기화</button>
+    </div>
+    <div class="row" style="margin-bottom:12px">
+      <div class="stat"><div class="l">총 운행거리</div><div class="v" id="sumDist">0 km</div></div>
+      <div class="stat"><div class="l">업무 사용비율</div><div class="v" id="sumRatio">0%</div></div>
+      <div class="stat"><div class="l">운행 건수</div><div class="v" id="sumCount">0건</div></div>
+    </div>
+    <div class="card" style="display:flex;align-items:center;padding:10px 14px;margin-bottom:12px">
+      <div style="flex:1">
+        <div style="font-weight:700;font-size:13px;color:var(--grayd)">평균 안전운전 점수</div>
+        <div class="muted" style="font-size:11px" id="safeSub">과속·급출발·급정거 기준</div>
+      </div>
+      <div id="safeVal" style="font-weight:800;font-size:22px;color:#9AA3AE">-</div>
+      <div id="safeTag" style="font-weight:700;font-size:13px;margin-left:8px;color:#9AA3AE"></div>
+    </div>
+    <div style="font-weight:700;color:var(--grayd);margin:0 0 6px 2px;font-size:14px">목적별 주행거리</div>
+    <div class="row" style="margin-bottom:12px">
+      <div class="stat"><div class="l">일반업무</div><div class="v" id="pbBiz">0 km</div><div class="l" id="pbBizN">0건</div></div>
+      <div class="stat"><div class="l">출퇴근</div><div class="v" id="pbCom">0 km</div><div class="l" id="pbComN">0건</div></div>
+      <div class="stat"><div class="l">비업무용</div><div class="v" id="pbPer">0 km</div><div class="l" id="pbPerN">0건</div></div>
+    </div>
+    <div style="display:flex;align-items:center;margin:0 2px 6px">
+      <div style="font-weight:700;color:var(--grayd);font-size:14px">운행 내역</div>
+      <select id="sortSel" onchange="renderList()" style="margin-left:8px;width:auto;padding:4px 8px;font-size:12px;border:1px solid var(--line);border-radius:8px;background:#fff">
+        <option value="new">최신순</option>
+        <option value="old">오래된순</option>
+      </select>
+    </div>
+    <div class="card" style="padding:6px 0">
+      <div id="tripList"></div>
+      <div id="tripEmpty" class="center muted" style="padding:24px">운행 기록이 없습니다.</div>
+    </div>
+  </div>
+  <button class="fab" onclick="openForm()">＋ 수동 입력</button>
+</div>
+
+<!-- ===== 상세 ===== -->
+<div id="detailView" class="hidden">
+  <header><div class="t">운행 상세</div><button onclick="backToApp()">목록</button></header>
+  <div class="wrap">
+    <div id="map"></div>
+    <div id="d_route" class="muted" style="margin-top:6px"></div>
+    <div class="card">
+      <div class="sec-title">운행 정보</div>
+      <div class="kv"><div class="k">운행일자</div><div class="v" id="d_date">-</div></div>
+      <div class="kv"><div class="k">운행목적</div><div class="v" id="d_purpose">-</div></div>
+      <div class="kv"><div class="k">출발</div><div class="v" id="d_start">-</div></div>
+      <div class="kv"><div class="k">도착</div><div class="v" id="d_end">-</div></div>
+      <div class="kv"><div class="k">방문처</div><div class="v" id="d_visit">-</div></div>
+      <div class="kv"><div class="k">거리</div><div class="v" id="d_dist">-</div></div>
+      <div class="kv"><div class="k">계기판</div><div class="v" id="d_odo">-</div></div>
+    </div>
+    <div class="row">
+      <button class="btn sec" onclick="editCurrent()">수정</button>
+      <button class="btn gray" onclick="deleteCurrent()">삭제</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 프로필 ===== -->
+<div id="profileView" class="hidden">
+  <header><div class="t">프로필</div><button onclick="backToApp()">닫기</button></header>
+  <div class="wrap">
+    <div class="card">
+      <label>이름</label><input id="p_name">
+      <label>회사명</label><input id="p_company">
+      <label>부서</label><input id="p_dept">
+      <label>직책</label><input id="p_position">
+      <label>차종</label><input id="p_vtype">
+      <label>주유 단가(원/km)</label><input id="p_fuel" type="number" inputmode="numeric">
+      <div id="p_err" class="err"></div>
+      <button class="btn" onclick="saveProfile()">저장</button>
+    </div>
+    <div class="muted">차량번호: <b id="p_plate">-</b> (변경은 관리자에게 문의)</div>
+  </div>
+</div>
+
+<!-- ===== 입력/수정 폼 ===== -->
+<div id="formView" class="hidden">
+  <header><div class="t" id="f_title">수동 입력</div><button onclick="backToApp()">취소</button></header>
+  <div class="wrap">
+    <div class="card">
+      <label>운행 날짜</label><input id="f_date" type="date" onchange="loadDayPos()">
+      <label>그날 운행 중 위치 (운행 내역에 들어갈 순서)</label>
+      <select id="f_pos" onchange="posChanged()"><option value="auto">그날 첫 운행 (자동)</option></select>
+      <label>운행목적</label>
+      <select id="f_purpose"><option>일반업무</option><option>출퇴근</option><option>비업무용</option></select>
+      <label>출발지 주소</label>
+      <div class="ac"><input id="f_saddr" autocomplete="off" placeholder="장소·주소 검색 (예: 에이텍모빌리티)" oninput="acSearch('s')"><span class="clearx" onclick="clearField('f_saddr','ac_s')">✕</span><div id="ac_s" class="aclist"></div></div>
+      <div class="row" style="margin-top:6px"><button class="btn sec" onclick="useLoc('s')">📍 현재 위치</button><button class="btn sec" onclick="openPicker('s')">🗺 지도에서 선택</button></div>
+      <label>도착지 주소</label>
+      <div class="ac"><input id="f_eaddr" autocomplete="off" placeholder="장소·주소 검색" oninput="acSearch('e')"><span class="clearx" onclick="clearField('f_eaddr','ac_e')">✕</span><div id="ac_e" class="aclist"></div></div>
+      <div class="row" style="margin-top:6px"><button class="btn sec" onclick="useLoc('e')">📍 현재 위치</button><button class="btn sec" onclick="openPicker('e')">🗺 지도에서 선택</button></div>
+      <button class="btn sec" style="margin-top:8px" onclick="autoFillDistance(true)">🚗 출발·도착 위치로 거리 자동계산</button>
+      <label>방문처</label><input id="f_visit">
+      <div class="row">
+        <div><label>출발 계기판(km)</label><input id="f_sodo" type="number" inputmode="numeric"></div>
+        <div><label>도착 계기판(km)</label><input id="f_eodo" type="number" inputmode="numeric"></div>
+      </div>
+      <div id="f_err" class="err"></div>
+      <button class="btn" onclick="saveTrip()">저장</button>
+    </div>
+    <div class="muted">출발/도착 계기판을 입력하면 운행거리가 자동 계산됩니다.</div>
+  </div>
+</div>
+
+<!-- ===== 지도에서 위치 선택 ===== -->
+<div id="pickerView" class="hidden">
+  <header><div class="t" id="pk_title">지도에서 선택</div><button onclick="show('formView')">취소</button></header>
+  <div class="pbar">
+    <div class="ac"><input id="pk_search" autocomplete="off" placeholder="장소·주소 검색 후 선택" oninput="pkSearch()"><span class="clearx" onclick="clearField('pk_search','pk_list')">✕</span><div id="pk_list" class="aclist"></div></div>
+    <div class="muted" id="pk_addr">지도를 탭하면 그 위치의 주소가 표시됩니다.</div>
+  </div>
+  <div id="pickerMap"></div>
+  <div class="wrap" style="padding:12px"><button class="btn" onclick="pickerConfirm()">이 위치로 선택</button></div>
+</div>
+
+<!-- ===== 엑셀 기간 선택 ===== -->
+<div id="xlsxModal" class="modal">
+  <div class="box">
+    <div class="sec-title">엑셀 다운로드 기간 선택</div>
+    <label>시작일</label><input id="xr_start" type="date">
+    <label>종료일</label><input id="xr_end" type="date">
+    <div style="margin-top:16px;font-weight:700;font-size:14px;color:var(--red)">포함할 운행 목적</div>
+    <div style="font-size:12.5px;color:var(--red);font-weight:700;margin:4px 0 2px">※ 차량일지 제출 시 ‘업무’ 운행내역만 선택하세요</div>
+    <div style="font-size:12px;color:#888;margin:0 0 10px">체크한 목적만 엑셀에 포함됩니다 (기본: 업무)</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <label class="pchk"><input type="checkbox" id="xp_biz" checked><span>업무 (일반업무)</span></label>
+      <label class="pchk"><input type="checkbox" id="xp_com"><span>출퇴근</span></label>
+      <label class="pchk"><input type="checkbox" id="xp_per"><span>비업무용</span></label>
+    </div>
+    <div class="row" style="margin-top:16px">
+      <button class="btn sec" onclick="closeExport()">취소</button>
+      <button class="btn" onclick="doExportExcel()">다운로드</button>
+    </div>
+  </div>
+</div>
+
+<!-- 운행 시작 (체크인) -->
+<div id="drvStartModal" class="modal">
+  <div class="box">
+    <div class="sec-title">운행 시작</div>
+    <label>운행목적</label>
+    <select id="ds_purpose"><option>일반업무</option><option>출퇴근</option><option>비업무용</option></select>
+    <label>방문처 (선택)</label><input id="ds_visit" placeholder="예: ○○전자 판교">
+    <label>출발 계기판(km)</label><input id="ds_odo" type="number" inputmode="numeric">
+    <div class="muted" id="ds_gps" style="font-size:12px;margin-top:8px">📍 현재 위치 확인 중…</div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn sec" onclick="closeDrv('drvStartModal')">취소</button>
+      <button class="btn" onclick="confirmStart()">출발</button>
+    </div>
+  </div>
+</div>
+
+<!-- 운행 종료 (체크아웃) -->
+<div id="drvStopModal" class="modal">
+  <div class="box">
+    <div class="sec-title">운행 종료</div>
+    <div class="muted" id="de_from" style="font-size:12px"></div>
+    <label>운행목적</label>
+    <select id="de_purpose"><option>일반업무</option><option>출퇴근</option><option>비업무용</option></select>
+    <label>방문처 (선택)</label><input id="de_visit">
+    <label>도착 계기판(km)</label><input id="de_odo" type="number" inputmode="numeric">
+    <div class="muted" id="de_gps" style="font-size:12px;margin-top:8px">📍 도착 위치 확인 중…</div>
+    <div class="muted" id="de_route" style="font-size:12px;color:var(--red)"></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn sec" onclick="closeDrv('drvStopModal')">취소</button>
+      <button class="btn" onclick="confirmStop()">종료·저장</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// ===== 설정 (Supabase / VWorld) =====
+const SUPABASE_URL = "https://eiyksjcqntenmetmhmij.supabase.co";
+const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpeWtzamNxbnRlbm1ldG1obWlqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4NTkwNTEsImV4cCI6MjA5NTQzNTA1MX0.I70QCrZeY7HTYOOTenYtV5udMLm_Ju7w_YvssXO_PE4";
+const VWORLD_KEY = "7C7FAAD8-479D-392B-B0A8-C2DB106F428D";
+const SALT = "acts-atecmobility-v1";
+// 카카오 지도 JavaScript 키 (kakao developers 에서 발급 + 사이트 도메인 등록). 비우면 주소검색/지도선택 비활성.
+const KAKAO_JS_KEY = "e32d74820095ee2b2d03c0d89c8ba37f";
+
+let session = null;        // {userId, username, plateNo, name}
+let curMonth = new Date(); // 보고 있는 달
+let trips = [];            // 현재 달 운행
+let current = null;        // 상세/수정 대상
+let mapObj = null;
+
+// ===== 유틸 =====
+function show(id){ ["loginView","signupView","appView","detailView","formView","profileView","pickerView"].forEach(v=>document.getElementById(v).classList.add("hidden")); document.getElementById(id).classList.remove("hidden"); window.scrollTo(0,0); }
+async function sha256(s){ const b=await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)); return Array.from(new Uint8Array(b)).map(x=>x.toString(16).padStart(2,"0")).join(""); }
+function hdr(extra){ return Object.assign({apikey:SUPABASE_ANON, Authorization:"Bearer "+SUPABASE_ANON}, extra||{}); }
+async function api(path, opts){ const r=await fetch(SUPABASE_URL+"/rest/v1/"+path, opts); return r; }
+function pad(n){return String(n).padStart(2,"0");}
+function fmtDate(ms){ const d=new Date(ms); return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function fmtTime(ms){ const d=new Date(ms); return pad(d.getHours())+":"+pad(d.getMinutes()); }
+
+// ===== 로그인 / 가입 =====
+async function doLogin(){
+  const u=val("li_user").trim(), p=val("li_pw");
+  const e=document.getElementById("li_err"); e.textContent="";
+  if(!u||!p){ e.textContent="아이디와 비밀번호를 입력하세요."; return; }
+  try{
+    const h=await sha256(`${u}:${p}:${SALT}`);
+    const r=await api(`app_users?username=eq.${encodeURIComponent(u)}&password_hash=eq.${encodeURIComponent(h)}&select=id,username,plate_no,name`, {headers:hdr()});
+    const arr=await r.json();
+    if(!Array.isArray(arr)||arr.length===0){ e.textContent="아이디 또는 비밀번호가 올바르지 않습니다."; return; }
+    session={userId:arr[0].id, username:arr[0].username, plateNo:arr[0].plate_no, name:arr[0].name||""};
+    if(document.getElementById("li_remember").checked){ localStorage.setItem("acts_creds", JSON.stringify({u,p})); } else { localStorage.removeItem("acts_creds"); }
+    enterApp();
+  }catch(err){ e.textContent="로그인 실패: "+err.message; }
+}
+async function doSignup(){
+  const u=val("su_user").trim(), p=val("su_pw"), p2=val("su_pw2"), plate=val("su_plate").trim(), name=val("su_name").trim();
+  const e=document.getElementById("su_err"); e.textContent="";
+  if(!u||!p||!plate||!name){ e.textContent="아이디·비밀번호·차량번호·이름은 필수입니다."; return; }
+  if(p.length<4){ e.textContent="비밀번호는 4자 이상이어야 합니다."; return; }
+  if(p!==p2){ e.textContent="비밀번호가 일치하지 않습니다."; return; }
+  if(!document.getElementById("su_agree").checked){ e.textContent="개인정보처리방침에 동의해 주세요."; return; }
+  try{
+    const h=await sha256(`${u}:${p}:${SALT}`);
+    const r=await api("app_users", {method:"POST", headers:hdr({"Content-Type":"application/json", Prefer:"return=representation"}), body:JSON.stringify({username:u,password_hash:h,plate_no:plate,name})});
+    if(r.status>=200&&r.status<300){ alert("회원가입 완료. 로그인해 주세요."); show("loginView"); return; }
+    const t=await r.text();
+    if(r.status===409||t.includes("23505")){ e.textContent = t.toLowerCase().includes("plate") ? "이미 등록된 차량번호입니다." : "이미 사용 중인 아이디입니다."; }
+    else e.textContent="가입 실패("+r.status+")";
+  }catch(err){ e.textContent="가입 실패: "+err.message; }
+}
+function logout(){ session=null; localStorage.removeItem("acts_creds"); show("loginView"); }
+
+// ===== 앱 진입 =====
+function enterApp(){
+  document.getElementById("me_name").textContent=session.name||session.username;
+  document.getElementById("me_plate").textContent=session.plateNo||"";
+  curMonth=new Date();
+  show("appView"); loadTrips(); renderDrv();
+  // iOS 단축어 자동화: ?autostart=1 (차량 BT 연결 시) / ?autostop=1 (해제 시)
+  try{
+    const qp=new URLSearchParams(location.search);
+    if(qp.get("autostart")==="1" && !getActive()) setTimeout(openStartDlg, 500);
+    if(qp.get("autostop")==="1" && getActive()) setTimeout(openStopDlg, 500);
+    if(qp.get("autostart")||qp.get("autostop")) history.replaceState(null,"",location.pathname);
+  }catch(e){}
+}
+
+// ===== 운행 체크인 (출발·도착 두 번 탭, 운행 중 화면 꺼도 됨) =====
+const DRV_KEY="acts_active_trip";
+function getActive(){ try{ return JSON.parse(localStorage.getItem(DRV_KEY)||"null"); }catch(e){ return null; } }
+function setActive(o){ if(o) localStorage.setItem(DRV_KEY, JSON.stringify(o)); else localStorage.removeItem(DRV_KEY); renderDrv(); }
+function renderDrv(){
+  const idle=document.getElementById("drv_idle"), act=document.getElementById("drv_active");
+  if(!idle) return;
+  const a=getActive();
+  idle.style.display=a?"none":"block"; act.style.display=a?"block":"none";
+  if(a){
+    const mins=Math.max(0,Math.round((Date.now()-a.start_time)/60000));
+    document.getElementById("drv_info").textContent=`🚗 운행 중 · ${a.purpose}`;
+    document.getElementById("drv_sub").textContent=`${fmtTime(a.start_time)} 출발 · ${mins}분 경과 · ${toDong(a.start_address)||"위치 미확인"}`;
+  }
+}
+setInterval(renderDrv, 30000);
+function getGPS(){ return new Promise(res=>{ if(!navigator.geolocation) return res(null);
+  navigator.geolocation.getCurrentPosition(p=>res({lat:p.coords.latitude,lng:p.coords.longitude}),
+    _=>res(null), {enableHighAccuracy:true, timeout:12000, maximumAge:10000}); }); }
+function closeDrv(id){ document.getElementById(id).style.display="none"; }
+async function openStartDlg(){
+  if(getActive()){ renderDrv(); return; }
+  setv("ds_visit",""); document.getElementById("ds_purpose").value="일반업무";
+  try{ const last=await latestOdometer(); setv("ds_odo", last!=null?last:""); }catch(e){ setv("ds_odo",""); }
+  document.getElementById("ds_gps").textContent="📍 현재 위치 확인 중…";
+  document.getElementById("drvStartModal").style.display="flex";
+  window._dsPos=null; window._dsAddr="";
+  getGPS().then(async p=>{
+    window._dsPos=p;
+    if(!p){ document.getElementById("ds_gps").textContent="⚠ 위치를 가져오지 못했습니다(권한 확인). 그래도 시작할 수 있어요 — 도착 계기판만 직접 입력하면 됩니다."; return; }
+    let addr=null; try{ addr=await kakaoReverse(p.lat,p.lng); }catch(e){}
+    if(!addr){ try{ addr=await osmReverse(p.lat,p.lng); }catch(e){} }
+    window._dsAddr=addr||"";
+    document.getElementById("ds_gps").textContent="📍 "+(toDong(addr)||"위치 확인됨");
+  });
+}
+function confirmStart(){
+  const odo=parseFloat(val("ds_odo"));
+  if(isNaN(odo)){ alert("출발 계기판을 입력하세요."); return; }
+  const p=window._dsPos;
+  setActive({ start_time:Date.now(), purpose:document.getElementById("ds_purpose").value, visit:val("ds_visit").trim(),
+    start_odo:odo, start_lat:p?p.lat:0, start_lng:p?p.lng:0, start_address:window._dsAddr||"" });
+  closeDrv("drvStartModal");
+}
+async function openStopDlg(){
+  const a=getActive(); if(!a){ renderDrv(); return; }
+  document.getElementById("de_purpose").value=a.purpose||"일반업무";
+  setv("de_visit", a.visit||""); setv("de_odo","");
+  document.getElementById("de_from").textContent=`출발: ${fmtTime(a.start_time)} · ${toDong(a.start_address)||"위치 미확인"} · 계기판 ${Math.round(a.start_odo||0)}km`;
+  document.getElementById("de_gps").textContent="📍 도착 위치 확인 중…";
+  document.getElementById("de_route").textContent="";
+  document.getElementById("drvStopModal").style.display="flex";
+  window._dePos=null; window._deAddr="";
+  const p=await getGPS(); window._dePos=p;
+  if(p){
+    let addr=null; try{ addr=await kakaoReverse(p.lat,p.lng); }catch(e){}
+    if(!addr){ try{ addr=await osmReverse(p.lat,p.lng); }catch(e){} }
+    window._deAddr=addr||"";
+    document.getElementById("de_gps").textContent="📍 "+(toDong(addr)||"위치 확인됨");
+    if(a.start_lat||a.start_lng){
+      try{
+        const rt=await osrmRoute(a.start_lat,a.start_lng,p.lat,p.lng);
+        setv("de_odo", Math.round((a.start_odo||0)+rt.km));
+        document.getElementById("de_route").textContent=`도로거리 약 ${rt.km.toFixed(1)}km · 예상 ${rt.min}분 (계기판 자동 입력됨, 수정 가능)`;
+      }catch(e){}
+    }
+  } else {
+    document.getElementById("de_gps").textContent="⚠ 위치를 가져오지 못했습니다. 도착 계기판을 직접 입력해 주세요.";
+  }
+}
+async function confirmStop(){
+  const a=getActive(); if(!a) return;
+  const eodo=parseFloat(val("de_odo"));
+  if(isNaN(eodo)){ alert("도착 계기판을 입력하세요."); return; }
+  if(eodo < (a.start_odo||0)){ alert("도착 계기판은 출발("+Math.round(a.start_odo)+"km)보다 커야 합니다."); return; }
+  const p=window._dePos;
+  const body={ user_id:session.userId, username:session.username, plate_no:session.plateNo,
+    start_time:a.start_time, end_time:Date.now(),
+    start_odometer:a.start_odo||0, end_odometer:eodo, distance_km:Math.max(0,eodo-(a.start_odo||0)),
+    purpose:document.getElementById("de_purpose").value, visit_place:val("de_visit").trim(),
+    start_address:a.start_address||"", end_address:window._deAddr||"",
+    start_lat:a.start_lat||0, start_lng:a.start_lng||0, end_lat:p?p.lat:0, end_lng:p?p.lng:0,
+    is_manual:false, client_trip_id:Date.now() };
+  try{
+    const r=await api("trips",{method:"POST",headers:hdr({"Content-Type":"application/json",Prefer:"return=minimal"}),body:JSON.stringify(body)});
+    if(r.status>=200&&r.status<300){ setActive(null); closeDrv("drvStopModal"); loadTrips(); alert("운행이 저장되었습니다."); }
+    else alert("저장 실패("+r.status+")");
+  }catch(e){ alert("저장 실패: "+e.message); }
+}
+function cancelActive(){ if(confirm("진행 중인 운행을 취소할까요? (저장되지 않습니다)")) setActive(null); }
+function changeMonth(d){ curMonth.setMonth(curMonth.getMonth()+d); loadTrips(); }
+async function loadTrips(){
+  document.getElementById("monthLabel").textContent=curMonth.getFullYear()+"년 "+(curMonth.getMonth()+1)+"월";
+  const start=new Date(curMonth.getFullYear(),curMonth.getMonth(),1).getTime();
+  const end=new Date(curMonth.getFullYear(),curMonth.getMonth()+1,1).getTime();
+  try{
+    const r=await api(`trips?username=eq.${encodeURIComponent(session.username)}&start_time=gte.${start}&start_time=lt.${end}&order=start_time.desc&select=*`, {headers:hdr()});
+    trips=await r.json(); if(!Array.isArray(trips)) trips=[];
+  }catch(e){ trips=[]; }
+  renderList();
+}
+function renderList(){
+  // 기간·목적 필터 (요약·안전점수에 적용, 아래 목록은 그대로)
+  const ps=val("sum_s"), pe2=val("sum_e"), pp=document.getElementById("sum_p").value;
+  let base=trips;
+  if(ps) base=base.filter(t=>fmtDate(t.start_time)>=ps);
+  if(pe2) base=base.filter(t=>fmtDate(t.start_time)<=pe2);
+  const f= pp? base.filter(t=>t.purpose===pp) : base;
+  const totalDist=f.reduce((a,t)=>a+(+t.distance_km||0),0);
+  const baseDist=base.reduce((a,t)=>a+(+t.distance_km||0),0);
+  const bizDist=base.filter(t=>t.purpose==="일반업무").reduce((a,t)=>a+(+t.distance_km||0),0);
+  document.getElementById("sumDist").textContent=totalDist.toFixed(1)+" km";
+  document.getElementById("sumRatio").textContent=(baseDist>0?Math.round(bizDist/baseDist*100):0)+"%";
+  document.getElementById("sumCount").textContent=f.length+"건";
+  // 평균 안전운전 점수 (기간·목적 필터 연동)
+  const scs=f.map(safeScore);
+  const avg=scs.length?Math.round(scs.reduce((a,b)=>a+b,0)/scs.length):null;
+  const harsh=f.reduce((a,t)=>a+(t.overspeed_count||0)+(t.rapid_accel_count||0)+(t.rapid_decel_count||0),0);
+  const sv=document.getElementById("safeVal"), stg=document.getElementById("safeTag"), sb=document.getElementById("safeSub");
+  if(avg==null){ sv.textContent="-"; sv.style.color="#9AA3AE"; stg.textContent=""; sb.textContent="과속·급출발·급정거 기준"; }
+  else{
+    const col=avg>=90?"#16A34A":avg>=80?"#0066FF":avg>=70?"#F59E0B":"#EF4444";
+    sv.textContent=avg+"점"; sv.style.color=col;
+    stg.textContent=avg>=90?"안전":avg>=80?"양호":avg>=70?"주의":"위험"; stg.style.color=col;
+    sb.textContent=`과속·급출발·급정거 총 ${harsh}회 · ${f.length}건 기준`;
+  }
+  // 목적별 주행거리·건수 (기간 기준)
+  function pb(p){ const l=base.filter(t=>t.purpose===p); return [l.reduce((a,t)=>a+(+t.distance_km||0),0), l.length]; }
+  const b=pb("일반업무"), c=pb("출퇴근"), pe=pb("비업무용");
+  document.getElementById("pbBiz").textContent=b[0].toFixed(1)+" km"; document.getElementById("pbBizN").textContent=b[1]+"건";
+  document.getElementById("pbCom").textContent=c[0].toFixed(1)+" km"; document.getElementById("pbComN").textContent=c[1]+"건";
+  document.getElementById("pbPer").textContent=pe[0].toFixed(1)+" km"; document.getElementById("pbPerN").textContent=pe[1]+"건";
+  const list=document.getElementById("tripList"); list.innerHTML="";
+  document.getElementById("tripEmpty").style.display=trips.length? "none":"block";
+  const sortOld=(document.getElementById("sortSel")||{}).value==="old";
+  (sortOld? trips.slice().reverse() : trips).forEach(t=>{
+    const div=document.createElement("div"); div.className="tripitem"; div.onclick=()=>openDetail(t);
+    div.innerHTML=`<div><div class="d">${fmtDate(t.start_time)} ${fmtTime(t.start_time)}</div><div class="a">${esc(toDong(t.end_address||t.start_address)||"-")}</div></div><div class="km">${(+t.distance_km||0).toFixed(1)}km</div>`;
+    list.appendChild(div);
+  });
+}
+
+// ===== 안전점수 =====
+function safeScore(t){ const p=(t.overspeed_count||0)*3+(t.rapid_accel_count||0)*3+(t.rapid_decel_count||0)*4; return Math.max(0,Math.min(100,100-p)); }
+function verdict(s){ return s>=90?"안전":s>=80?"양호":s>=70?"주의":"위험"; }
+
+// ===== 상세 =====
+function openDetail(t){
+  current=t; show("detailView");
+  document.getElementById("d_date").textContent=fmtDate(t.start_time);
+  document.getElementById("d_purpose").textContent=t.purpose||"-";
+  document.getElementById("d_start").textContent=`${fmtTime(t.start_time)}  ${toDong(t.start_address)||"-"}`;
+  document.getElementById("d_end").textContent=`${fmtTime(t.end_time)}  ${toDong(t.end_address)||"-"}`;
+  document.getElementById("d_visit").textContent=t.visit_place||"-";
+  document.getElementById("d_dist").textContent=(+t.distance_km||0).toFixed(1)+" km";
+  document.getElementById("d_odo").textContent=`${Math.round(t.start_odometer||0)} → ${Math.round(t.end_odometer||0)} km`;
+  setTimeout(()=>renderMap(t),100);
+}
+function renderMap(t){ ensureKakao(ok=>{ if(ok) renderKakaoMap(t); else renderOsmMap(t); }); }
+function renderKakaoMap(t){
+  if(mapObj){ try{mapObj.remove();}catch(e){} mapObj=null; }
+  const sLat=+t.start_lat||0,sLng=+t.start_lng||0,eLat=+t.end_lat||0,eLng=+t.end_lng||0;
+  const el=document.getElementById("map"); el.innerHTML="";
+  const ctr=new kakao.maps.LatLng(eLat||sLat||37.5665, eLng||sLng||126.978);
+  const map=new kakao.maps.Map(el,{center:ctr, level:5});
+  if(sLat||sLng) new kakao.maps.Marker({position:new kakao.maps.LatLng(sLat,sLng), map:map});
+  if(eLat||eLng) new kakao.maps.Marker({position:new kakao.maps.LatLng(eLat,eLng), map:map});
+  const info=document.getElementById("d_route");
+  if((sLat||sLng)&&(eLat||eLng)){
+    osrmRoute(sLat,sLng,eLat,eLng).then(rt=>{
+      const path=rt.coords.map(c=>new kakao.maps.LatLng(c[0],c[1]));
+      new kakao.maps.Polyline({path:path, strokeWeight:5, strokeColor:"#0066ff", strokeOpacity:0.9, map:map});
+      const b=new kakao.maps.LatLngBounds(); path.forEach(p=>b.extend(p)); map.setBounds(b);
+      if(info) info.textContent=`도로거리 약 ${rt.km.toFixed(1)}km · 예상 소요 ${rt.min}분`;
+    });
+  } else if(info){ info.textContent=""; }
+  setTimeout(()=>map.relayout(),200);
+}
+function renderOsmMap(t){
+  if(mapObj){ mapObj.remove(); mapObj=null; }
+  const sLat=+t.start_lat||0, sLng=+t.start_lng||0, eLat=+t.end_lat||0, eLng=+t.end_lng||0;
+  mapObj=L.map("map");
+  const topt={maxZoom:19, updateWhenIdle:true, keepBuffer:6};
+  const vw=L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_KEY}/Base/{z}/{y}/{x}.png`,topt);
+  const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",topt);
+  let fell=false; vw.on("tileerror",()=>{ if(!fell){fell=true; mapObj.removeLayer(vw); osm.addTo(mapObj);} });
+  vw.addTo(mapObj);
+  function pin(ll,c){ L.circleMarker(ll,{color:"#fff",weight:3,fillColor:c,fillOpacity:1,radius:8}).addTo(mapObj); }
+  if((sLat||sLng)&&(eLat||eLng)){ const b=L.latLngBounds([[sLat,sLng],[eLat,eLng]]); mapObj.fitBounds(b,{padding:[40,40]}); pin([sLat,sLng],"#16a34a"); pin([eLat,eLng],"#ef4444"); }
+  else if(eLat||eLng){ mapObj.setView([eLat,eLng],15); pin([eLat,eLng],"#ef4444"); }
+  else if(sLat||sLng){ mapObj.setView([sLat,sLng],15); pin([sLat,sLng],"#16a34a"); }
+  else { mapObj.setView([37.5665,126.978],11); }
+  setTimeout(()=>mapObj.invalidateSize(),200);
+}
+function backToApp(){ if(mapObj){mapObj.remove();mapObj=null;} show("appView"); loadTrips(); }
+
+// ===== 입력/수정 =====
+let editing=null; let pickLat={s:0,sl:0,e:0,el:0};
+async function openForm(){ editing=null; document.getElementById("f_title").textContent="수동 입력"; const n=new Date();
+  setv("f_date", n.toISOString().slice(0,10));
+  setv("f_purpose","일반업무"); setv("f_saddr",""); setv("f_eaddr",""); setv("f_visit",""); setv("f_sodo",""); setv("f_eodo","");
+  pickLat={s:0,sl:0,e:0,el:0}; document.getElementById("f_err").textContent=""; show("formView");
+  loadDayPos();
+  // 직전 운행의 도착 계기판을 출발 계기판으로 자동 입력(누적)
+  try{ const last=await latestOdometer(); if(last!=null) setv("f_sodo", last); }catch(e){}
+}
+// 선택한 날짜의 기존 운행 목록 → '넣을 위치' 드롭다운 구성
+async function loadDayPos(){
+  const sel=document.getElementById("f_pos"); if(!sel) return;
+  const date=val("f_date"); sel.innerHTML=""; window._dayPos=[];
+  let day=[];
+  try{
+    const s=new Date(date+"T00:00:00").getTime(), e=new Date(date+"T23:59:59.999").getTime();
+    const r=await api(`trips?username=eq.${encodeURIComponent(session.username)}&start_time=gte.${s}&start_time=lte.${e}&order=start_time.asc&select=id,start_time,end_time,end_address,purpose,start_odometer,end_odometer`,{headers:hdr()});
+    day=await r.json(); if(!Array.isArray(day)) day=[];
+  }catch(e){ day=[]; }
+  if(editing) day=day.filter(t=>t.id!==editing.id);
+  window._dayPos=day;
+  const opt=(v,txt)=>{const o=document.createElement("option");o.value=v;o.textContent=txt;sel.appendChild(o);};
+  if(!day.length){ opt("auto","그날 첫 운행 (자동)"); return; }
+  opt("0","맨 앞 — 첫 운행 전");
+  day.forEach((t,i)=>opt(String(i+1),`${fmtTime(t.start_time)} · ${toDong(t.end_address)||t.purpose||"운행"} 다음`+(i===day.length-1?"  (맨 뒤)":"")));
+  sel.value = editing ? String(day.filter(t=>t.start_time<editing.start_time).length) : String(day.length);
+  if(!editing) posChanged();
+}
+// 위치 변경 → 출발 계기판을 앞 운행 도착값으로 자동 세팅(역행 방지), 입력된 거리 유지하며 도착 보정
+function posChanged(){
+  if(editing) return;
+  const day=window._dayPos||[]; const v=document.getElementById("f_pos").value;
+  if(v==="auto"||!day.length) return;
+  const p=parseInt(v,10);
+  if(p>0){
+    const so=Math.round(day[p-1].end_odometer||0);
+    const oldS=parseFloat(val("f_sodo"))||0, oldE=parseFloat(val("f_eodo"))||0;
+    const d=Math.max(0, oldE-oldS);
+    setv("f_sodo", so);
+    if(oldE) setv("f_eodo", so+d);
+  }
+}
+async function latestOdometer(){
+  const r=await api(`trips?username=eq.${encodeURIComponent(session.username)}&order=end_time.desc&limit=1&select=end_odometer`,{headers:hdr()});
+  const a=await r.json();
+  if(Array.isArray(a)&&a[0]&&a[0].end_odometer!=null) return Math.round(a[0].end_odometer);
+  return null;
+}
+function editCurrent(){ const t=current; editing=t; document.getElementById("f_title").textContent="운행 수정";
+  setv("f_date",fmtDate(t.start_time));
+  setv("f_purpose",t.purpose||"일반업무"); setv("f_saddr",t.start_address||""); setv("f_eaddr",t.end_address||""); setv("f_visit",t.visit_place||"");
+  setv("f_sodo",Math.round(t.start_odometer||0)); setv("f_eodo",Math.round(t.end_odometer||0));
+  pickLat={s:+t.start_lat||0,sl:+t.start_lng||0,e:+t.end_lat||0,el:+t.end_lng||0};
+  document.getElementById("f_err").textContent=""; show("formView"); loadDayPos(); }
+
+function useLoc(which){
+  if(!navigator.geolocation){ alert("위치를 지원하지 않는 브라우저입니다."); return; }
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    const la=pos.coords.latitude, ln=pos.coords.longitude;
+    if(which==="s"){ pickLat.s=la; pickLat.sl=ln; } else { pickLat.e=la; pickLat.el=ln; }
+    let addr=await kakaoReverse(la,ln); if(!addr) addr=await osmReverse(la,ln);
+    if(addr) setv(which==="s"?"f_saddr":"f_eaddr", addr);
+    else alert("좌표는 기록했어요. 주소는 직접 입력해 주세요.");
+    autoFillDistance(false);
+  }, err=>alert("위치를 가져오지 못했습니다: "+err.message), {enableHighAccuracy:true, timeout:10000});
+}
+
+// ===== 카카오 지도 (주소 자동검색 / 지도에서 선택) =====
+let kakaoReady=false, kakaoLoading=false, kakaoCbs=[];
+function ensureKakao(cb){
+  if(kakaoReady) return cb(true);
+  if(!KAKAO_JS_KEY){ return cb(false); }
+  kakaoCbs.push(cb); if(kakaoLoading) return; kakaoLoading=true;
+  const s=document.createElement("script");
+  s.src=`//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&libraries=services&autoload=false`;
+  s.onload=()=>{ kakao.maps.load(()=>{ kakaoReady=true; kakaoCbs.forEach(f=>f(true)); kakaoCbs=[]; }); };
+  s.onerror=()=>{ kakaoLoading=false; kakaoCbs.forEach(f=>f(false)); kakaoCbs=[]; };
+  document.head.appendChild(s);
+}
+function kakaoReverse(lat,lng){ return new Promise(res=>{ ensureKakao(ok=>{ if(!ok) return res(null);
+  const g=new kakao.maps.services.Geocoder();
+  g.coord2Address(lng,lat,(r,st)=>{ if(st===kakao.maps.services.Status.OK&&r[0]){ const a=r[0]; res((a.road_address&&a.road_address.address_name)||(a.address&&a.address.address_name)||null);} else res(null); });
+}); }); }
+// 주소 자동검색: 카카오 키가 있으면 카카오, 없으면 OSM(무료)로 동작
+let acTimer=null;
+function acSearch(which){
+  const q=val(which==="s"?"f_saddr":"f_eaddr").trim();
+  const box=document.getElementById(which==="s"?"ac_s":"ac_e");
+  if(q.length<2){ box.style.display="none"; return; }
+  clearTimeout(acTimer); acTimer=setTimeout(()=>{
+    ensureKakao(ok=>{ if(ok) kakaoKeyword(which,q,box); else osmKeyword(which,q,box, KAKAO_JS_KEY? "OSM·카카오SDK로드실패":"OSM·키없음(파일미반영)"); });
+  },350);
+}
+function fillAddr(which,addr,lat,lng){
+  setv(which==="s"?"f_saddr":"f_eaddr", addr);
+  if(which==="s"){ pickLat.s=lat; pickLat.sl=lng; } else { pickLat.e=lat; pickLat.el=lng; }
+  document.getElementById(which==="s"?"ac_s":"ac_e").style.display="none";
+  autoFillDistance(false); // 출발·도착 둘 다 있으면 도착 계기판 자동 계산
+}
+function kakaoKeyword(which,q,box){
+  try{
+    const ps=new kakao.maps.services.Places();
+    ps.keywordSearch(q,(data,st)=>{
+      if(st===kakao.maps.services.Status.OK){
+        box.innerHTML=""; data.slice(0,8).forEach(it=>{ const d=document.createElement("div");
+          d.innerHTML=`${esc(it.place_name)}<small>${esc(it.road_address_name||it.address_name||"")}</small>`;
+          d.onclick=()=>fillAddr(which, it.road_address_name||it.address_name||it.place_name, +it.y, +it.x); box.appendChild(d); });
+        box.style.display="block"; return;
+      }
+      if(st===kakao.maps.services.Status.ZERO_RESULT){ osmKeyword(which,q,box,"OSM·카카오결과없음"); return; }
+      osmKeyword(which,q,box,"OSM·카카오인증오류");   // ERROR = 키/도메인/카카오맵 활성화 문제
+    });
+  }catch(e){ osmKeyword(which,q,box,"OSM·카카오예외"); }
+}
+// 입력칸 지우기(✕)
+function clearField(id,listId){ setv(id,""); if(listId){ const b=document.getElementById(listId); if(b) b.style.display="none"; } const el=document.getElementById(id); if(el) el.focus(); }
+// 자동차 도로거리 계산(OSRM) → 실패 시 직선거리×1.3 근사
+function haversine(la1,lo1,la2,lo2){ const R=6371,t=x=>x*Math.PI/180; const dLa=t(la2-la1),dLo=t(lo2-lo1); const a=Math.sin(dLa/2)**2+Math.cos(t(la1))*Math.cos(t(la2))*Math.sin(dLo/2)**2; return 2*R*Math.asin(Math.sqrt(a)); }
+async function osrmRoute(sLat,sLng,eLat,eLng){
+  try{ const u=`https://router.project-osrm.org/route/v1/driving/${sLng},${sLat};${eLng},${eLat}?overview=full&geometries=geojson`;
+    const r=await fetch(u); const j=await r.json();
+    if(j.routes&&j.routes[0]){ const rt=j.routes[0]; return {km:rt.distance/1000, min:Math.round(rt.duration/60), coords:rt.geometry.coordinates.map(c=>[c[1],c[0]])}; } }catch(e){}
+  return {km:haversine(sLat,sLng,eLat,eLng)*1.3, min:0, coords:[[sLat,sLng],[eLat,eLng]]};
+}
+async function autoFillDistance(manual){
+  const hasS=pickLat.s!==0||pickLat.sl!==0, hasE=pickLat.e!==0||pickLat.el!==0;
+  if(!hasS||!hasE){ if(manual) alert("출발·도착 위치를 먼저 (검색/지도/현재위치로) 선택해 주세요."); return; }
+  const rt=await osrmRoute(pickLat.s,pickLat.sl,pickLat.e,pickLat.el);
+  const so=parseFloat(val("f_sodo"))||0;
+  setv("f_eodo", Math.round(so+rt.km));
+}
+async function osmKeyword(which,q,box,tag){
+  try{ const data=await osmSearch(q);
+    if(!data.length){ box.innerHTML="<div>검색 결과 없음 ["+(tag||"OSM")+"] · 직접 입력/지도 선택</div>"; box.style.display="block"; return; }
+    box.innerHTML=""; data.forEach(it=>{ const d=document.createElement("div"); d.innerHTML=esc(it.display_name);
+      d.onclick=()=>fillAddr(which, it.display_name, +it.lat, +it.lon); box.appendChild(d); });
+    box.style.display="block";
+  }catch(e){ box.innerHTML="<div>검색 오류["+(tag||"OSM")+"]. 직접 입력해 주세요.</div>"; box.style.display="block"; }
+}
+async function osmSearch(q){ const r=await fetch(`https://nominatim.openstreetmap.org/search?format=json&accept-language=ko&countrycodes=kr&limit=8&q=${encodeURIComponent(q)}`); return await r.json(); }
+async function osmReverse(lat,lng){ try{ const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&accept-language=ko&lat=${lat}&lon=${lng}`); const j=await r.json(); return j.display_name||null; }catch(e){ return null; } }
+
+// 지도에서 선택: 카카오 키 있으면 카카오 지도, 없으면 OSM(Leaflet) 지도
+let pkMode="osm",pkMap=null,pkMarker=null,pkWhich="s",pkGeocoder=null,pkSel=null,pkTimer=null,pkLeaflet=null,pkLMarker=null;
+function openPicker(which){ pkWhich=which; ensureKakao(ok=>{ if(ok) openKakaoPicker(); else openOsmPicker(); }); }
+function resetPicker(){ show("pickerView"); setv("pk_search",""); document.getElementById("pk_list").style.display="none"; document.getElementById("pk_addr").textContent="지도를 탭하면 그 위치의 주소가 표시됩니다."; pkSel=null; }
+function openKakaoPicker(){
+  pkMode="kakao"; resetPicker();
+  setTimeout(()=>{ const c=new kakao.maps.LatLng(37.5665,126.978);
+    if(!pkMap){ pkMap=new kakao.maps.Map(document.getElementById("pickerMap"),{center:c,level:4}); pkGeocoder=new kakao.maps.services.Geocoder();
+      kakao.maps.event.addListener(pkMap,"click",e=>kakaoPlace(e.latLng)); } else { pkMap.relayout(); } },120);
+}
+function kakaoPlace(latlng){
+  if(pkMarker) pkMarker.setMap(null); pkMarker=new kakao.maps.Marker({position:latlng,map:pkMap});
+  pkSel={lat:latlng.getLat(),lng:latlng.getLng(),addr:""};
+  pkGeocoder.coord2Address(latlng.getLng(),latlng.getLat(),(r,st)=>{ if(st===kakao.maps.services.Status.OK&&r[0]){ const a=r[0]; const addr=(a.road_address&&a.road_address.address_name)||(a.address&&a.address.address_name)||""; pkSel.addr=addr; document.getElementById("pk_addr").textContent=addr||"주소 확인 불가"; } });
+}
+function openOsmPicker(){
+  pkMode="osm"; resetPicker();
+  setTimeout(()=>{ if(!pkLeaflet){ pkLeaflet=L.map("pickerMap").setView([37.5665,126.978],13);
+    const topt={maxZoom:19,updateWhenIdle:true};
+    const vw=L.tileLayer(`https://api.vworld.kr/req/wmts/1.0.0/${VWORLD_KEY}/Base/{z}/{y}/{x}.png`,topt);
+    const osm=L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",topt);
+    let fell=false; vw.on("tileerror",()=>{ if(!fell){fell=true;pkLeaflet.removeLayer(vw);osm.addTo(pkLeaflet);} }); vw.addTo(pkLeaflet);
+    pkLeaflet.on("click",e=>osmPlace(e.latlng.lat,e.latlng.lng)); } else { pkLeaflet.invalidateSize(); } },150);
+}
+async function osmPlace(lat,lng){
+  if(pkLMarker) pkLeaflet.removeLayer(pkLMarker); pkLMarker=L.marker([lat,lng]).addTo(pkLeaflet);
+  pkSel={lat,lng,addr:""}; const a=await osmReverse(lat,lng); pkSel.addr=a||""; document.getElementById("pk_addr").textContent=a||"주소 확인 불가";
+}
+function pkSearch(){
+  const q=val("pk_search").trim(); const box=document.getElementById("pk_list");
+  if(q.length<2){ box.style.display="none"; return; }
+  clearTimeout(pkTimer); pkTimer=setTimeout(()=>{
+    if(pkMode==="kakao"){
+      const ps=new kakao.maps.services.Places();
+      ps.keywordSearch(q,(data,st)=>{ if(st!==kakao.maps.services.Status.OK){ box.style.display="none"; return; }
+        box.innerHTML=""; data.slice(0,8).forEach(it=>{ const d=document.createElement("div");
+          d.innerHTML=`${esc(it.place_name)}<small>${esc(it.road_address_name||it.address_name||"")}</small>`;
+          d.onclick=()=>{ const ll=new kakao.maps.LatLng(+it.y,+it.x); pkMap.setCenter(ll); pkMap.setLevel(3); kakaoPlace(ll); box.style.display="none"; setv("pk_search",it.place_name); };
+          box.appendChild(d); }); box.style.display="block"; });
+    } else {
+      osmSearch(q).then(data=>{ if(!data.length){ box.style.display="none"; return; }
+        box.innerHTML=""; data.forEach(it=>{ const d=document.createElement("div"); d.innerHTML=esc(it.display_name);
+          d.onclick=()=>{ const la=+it.lat, ln=+it.lon; pkLeaflet.setView([la,ln],16); osmPlace(la,ln); box.style.display="none"; setv("pk_search",it.display_name); };
+          box.appendChild(d); }); box.style.display="block";
+      }).catch(()=>{ box.style.display="none"; });
+    }
+  },350);
+}
+function pickerConfirm(){
+  if(!pkSel){ alert("지도를 탭하거나 검색으로 위치를 선택하세요."); return; }
+  const addr=pkSel.addr||val("pk_search")||"";
+  setv(pkWhich==="s"?"f_saddr":"f_eaddr", addr);
+  if(pkWhich==="s"){ pickLat.s=pkSel.lat; pickLat.sl=pkSel.lng; } else { pickLat.e=pkSel.lat; pickLat.el=pkSel.lng; }
+  show("formView");
+  autoFillDistance(false);
+}
+async function reverseGeocode(lat,lng){
+  try{
+    const url=`https://api.vworld.kr/req/address?service=address&request=getAddress&version=2.0&crs=epsg:4326&point=${lng},${lat}&format=json&type=both&key=${VWORLD_KEY}`;
+    const r=await fetch(url); const j=await r.json();
+    const res=j.response&&j.response.result; if(res&&res.length){ const parcel=res.find(x=>x.type==="parcel"); return (parcel||res[0]).text; }
+  }catch(e){}
+  return null;
+}
+async function saveTrip(){
+  const e=document.getElementById("f_err"); e.textContent="";
+  const date=val("f_date");
+  if(!date){ e.textContent="날짜를 입력하세요."; return; }
+  // 시각 = 선택한 '그날 운행 중 위치' 기준으로 자동 계산
+  const day=window._dayPos||[];
+  const posv=(document.getElementById("f_pos")||{}).value;
+  const day0=new Date(date+"T00:00:00").getTime();
+  const clampT=x=>Math.min(Math.max(x, day0+5*60000), day0+(23*60+50)*60000);
+  let start;
+  if(posv==="auto"||!day.length){ start=day0+9*3600000; }
+  else{
+    const p=parseInt(posv,10);
+    if(p<=0) start=clampT(day[0].start_time-30*60000);
+    else if(p>=day.length) start=clampT(Math.max(day[day.length-1].start_time, day[day.length-1].end_time||0)+30*60000);
+    else start=Math.round((day[p-1].start_time+day[p].start_time)/2);
+  }
+  let end=start;
+  // 수정인데 날짜·위치를 안 바꿨으면 기존 시각 유지
+  if(editing && fmtDate(editing.start_time)===date){
+    const curPos=day.filter(t=>t.start_time<editing.start_time).length;
+    if(posv===String(curPos)){ start=editing.start_time; end=editing.end_time||start; }
+  }
+  const sodo=parseFloat(val("f_sodo"))||0, eodo=parseFloat(val("f_eodo"))||0;
+  if(eodo<sodo){ e.textContent="도착 계기판은 출발보다 커야 합니다."; return; }
+  // 계기판 역행 방지: 출발은 앞 운행 도착보다 작을 수 없음 (이후 운행은 저장 시 자동 시프트)
+  if(posv!=="auto" && day.length){
+    const p=parseInt(posv,10);
+    const prevT= p>0? day[p-1]:null;
+    if(prevT && sodo < Math.round(prevT.end_odometer||0)){
+      e.textContent=`출발 계기판(${sodo}km)이 앞 운행 도착(${Math.round(prevT.end_odometer)}km)보다 작아 역행합니다. ${Math.round(prevT.end_odometer)}km 이상으로 입력하세요.`; return;
+    }
+  }
+  const dist=Math.max(0, eodo-sodo);
+  const body={
+    user_id:session.userId, username:session.username, plate_no:session.plateNo,
+    start_time:start, end_time:end, start_odometer:sodo, end_odometer:eodo, distance_km:dist,
+    purpose:val("f_purpose"), start_address:val("f_saddr"), end_address:val("f_eaddr"), visit_place:val("f_visit"),
+    start_lat:pickLat.s, start_lng:pickLat.sl, end_lat:pickLat.e, end_lng:pickLat.el,
+    is_manual:true
+  };
+  try{
+    // 이 운행 '이후'의 모든 운행(다음 날짜 포함) 조회 → 계기판이 겹치면 그만큼 일괄 시프트
+    let after=[];
+    try{
+      const ra=await api(`trips?username=eq.${encodeURIComponent(session.username)}&start_time=gt.${start}&order=start_time.asc&select=id,start_odometer,end_odometer`,{headers:hdr()});
+      after=await ra.json(); if(!Array.isArray(after)) after=[];
+    }catch(_){ after=[]; }
+    if(editing) after=after.filter(t=>t.id!==editing.id);
+    const shift= after.length? Math.max(0, eodo-(+after[0].start_odometer||0)) : 0;
+
+    let r;
+    if(editing){ r=await api(`trips?id=eq.${editing.id}`, {method:"PATCH", headers:hdr({"Content-Type":"application/json", Prefer:"return=minimal"}), body:JSON.stringify(body)}); }
+    else { body.client_trip_id=Date.now(); r=await api("trips", {method:"POST", headers:hdr({"Content-Type":"application/json", Prefer:"return=minimal"}), body:JSON.stringify(body)}); }
+    if(r.status>=200&&r.status<300){
+      if(shift>0){
+        for(const t of after){
+          await api(`trips?id=eq.${t.id}`, {method:"PATCH", headers:hdr({"Content-Type":"application/json", Prefer:"return=minimal"}),
+            body:JSON.stringify({start_odometer:(+t.start_odometer||0)+shift, end_odometer:(+t.end_odometer||0)+shift})});
+        }
+        alert(`이후 운행 ${after.length}건의 계기판을 +${Math.round(shift)}km 자동 조정했습니다.`);
+      }
+      backToApp();
+    } else { e.textContent="저장 실패("+r.status+")"; }
+  }catch(err){ e.textContent="저장 실패: "+err.message; }
+}
+async function deleteCurrent(){
+  if(!confirm("이 운행기록을 삭제할까요?")) return;
+  // 이후 운행·앞 운행 조회 → 당길 수 있는 km 계산
+  const dist=Math.max(0, Math.round((+current.end_odometer||0)-(+current.start_odometer||0)));
+  let after=[], prevEnd=0;
+  try{
+    const ra=await api(`trips?username=eq.${encodeURIComponent(session.username)}&start_time=gt.${current.start_time}&order=start_time.asc&select=id,start_odometer,end_odometer`,{headers:hdr()});
+    after=await ra.json(); if(!Array.isArray(after)) after=[];
+    const rp=await api(`trips?username=eq.${encodeURIComponent(session.username)}&start_time=lt.${current.start_time}&order=start_time.desc&limit=1&select=end_odometer`,{headers:hdr()});
+    const pa=await rp.json(); prevEnd=(Array.isArray(pa)&&pa[0])?(+pa[0].end_odometer||0):0;
+  }catch(_){ after=[]; }
+  after=after.filter(t=>t.id!==current.id);
+  let pull=0;
+  if(dist>0 && after.length){
+    pull=Math.min(dist, Math.max(0, Math.round((+after[0].start_odometer||0)-prevEnd)));
+    if(pull>0 && !confirm(`삭제한 만큼 이후 운행 ${after.length}건의 계기판을 -${pull}km 당길까요?\n\n· 잘못 넣은 기록이면 → 확인(당김)\n· 실제 운행했던 기록이면 → 취소(그대로 둠)`)) pull=0;
+  }
+  try{ const r=await api(`trips?id=eq.${current.id}`, {method:"DELETE", headers:hdr({Prefer:"return=minimal"})});
+    if(r.status>=200&&r.status<300){
+      if(pull>0){
+        for(const t of after){
+          await api(`trips?id=eq.${t.id}`, {method:"PATCH", headers:hdr({"Content-Type":"application/json", Prefer:"return=minimal"}),
+            body:JSON.stringify({start_odometer:(+t.start_odometer||0)-pull, end_odometer:(+t.end_odometer||0)-pull})});
+        }
+      }
+      backToApp();
+    } else alert("삭제 실패("+r.status+")");
+  }catch(e){ alert("삭제 실패: "+e.message); }
+}
+
+// ===== 프로필 (클라우드 저장) =====
+async function openProfile(){
+  show("profileView"); document.getElementById("p_err").textContent="";
+  document.getElementById("p_plate").textContent=session.plateNo||"-";
+  try{
+    const r=await api(`app_users?username=eq.${encodeURIComponent(session.username)}&select=name,company_name,dept,position,vehicle_type,fuel_unit_price`, {headers:hdr()});
+    const a=await r.json(); const p=(Array.isArray(a)&&a[0])||{};
+    setv("p_name", p.name||session.name||"");
+    setv("p_company", p.company_name||"에이텍모빌리티");
+    setv("p_dept", p.dept||""); setv("p_position", p.position||"");
+    setv("p_vtype", p.vehicle_type||""); setv("p_fuel", p.fuel_unit_price!=null?p.fuel_unit_price:159);
+  }catch(e){}
+}
+async function saveProfile(){
+  const e=document.getElementById("p_err"); e.textContent="";
+  const body={ name:val("p_name").trim(), company_name:val("p_company").trim(),
+    dept:val("p_dept").trim(), position:val("p_position").trim(), vehicle_type:val("p_vtype").trim(),
+    fuel_unit_price:parseInt(val("p_fuel"))||159, profile_completed:true };
+  try{
+    const r=await api(`app_users?username=eq.${encodeURIComponent(session.username)}`, {method:"PATCH", headers:hdr({"Content-Type":"application/json", Prefer:"return=minimal"}), body:JSON.stringify(body)});
+    if(r.status>=200&&r.status<300){ session.name=body.name; document.getElementById("me_name").textContent=body.name||session.username; alert("저장되었습니다."); backToApp(); }
+    else e.textContent="저장 실패("+r.status+")";
+  }catch(err){ e.textContent="저장 실패: "+err.message; }
+}
+
+// ===== 엑셀 내보내기 (안드로이드 앱과 동일한 '차량운행내역기록부' 양식) =====
+function toISO(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+function openExportDialog(){
+  const y=curMonth.getFullYear(), m=curMonth.getMonth();
+  setv("xr_start", toISO(new Date(y,m,1)));
+  setv("xr_end", toISO(new Date(y,m+1,0)));
+  document.getElementById("xlsxModal").style.display="flex";
+}
+function closeExport(){ document.getElementById("xlsxModal").style.display="none"; }
+async function doExportExcel(){
+  const sd=val("xr_start"), ed=val("xr_end");
+  if(!sd||!ed){ alert("기간(시작일·종료일)을 선택하세요."); return; }
+  const start=new Date(sd+"T00:00:00").getTime();
+  const end=new Date(ed+"T23:59:59.999").getTime();
+  if(end<start){ alert("종료일이 시작일보다 빠릅니다."); return; }
+  const allow=[];
+  if(document.getElementById("xp_biz").checked) allow.push("일반업무");
+  if(document.getElementById("xp_com").checked) allow.push("출퇴근");
+  if(document.getElementById("xp_per").checked) allow.push("비업무용");
+  if(!allow.length){ alert("포함할 운행 목적을 한 개 이상 선택하세요."); return; }
+  let rangeTrips=[];
+  try{ const r=await api(`trips?username=eq.${encodeURIComponent(session.username)}&start_time=gte.${start}&start_time=lte.${end}&order=start_time.asc&select=*`,{headers:hdr()}); rangeTrips=await r.json(); if(!Array.isArray(rangeTrips)) rangeTrips=[]; }catch(e){ rangeTrips=[]; }
+  rangeTrips=rangeTrips.filter(t=>allow.includes(t.purpose||"일반업무"));
+  if(!rangeTrips.length){ alert("선택한 기간·목적에 해당하는 운행기록이 없습니다."); return; }
+  let prof={};
+  try{ const r=await api(`app_users?username=eq.${encodeURIComponent(session.username)}&select=name,company_name,dept,vehicle_type,fuel_unit_price`,{headers:hdr()}); const a=await r.json(); prof=(Array.isArray(a)&&a[0])||{}; }catch(e){}
+  const fuel = prof.fuel_unit_price!=null?prof.fuel_unit_price:159;
+  const periodLabel=`(기간 : ${sd} ~ ${ed})`;
+  const sheet = buildSheetXml({ plate:session.plateNo, vehicleType:prof.vehicle_type||"", company:prof.company_name||"에이텍모빌리티", dept:prof.dept||"", name:prof.name||session.name||"", fuel, periodLabel, trips:rangeTrips });
+  const zip=new JSZip();
+  zip.file("[Content_Types].xml", XLSX_CT);
+  zip.file("_rels/.rels", XLSX_RELS);
+  zip.file("xl/workbook.xml", XLSX_WB);
+  zip.file("xl/_rels/workbook.xml.rels", XLSX_WBR);
+  zip.file("xl/styles.xml", XLSX_STY);
+  zip.file("xl/worksheets/sheet1.xml", sheet);
+  const fname=`ATEC Driving 운행일지_${session.plateNo}_${sd}_${ed}.xlsx`;
+  const XLSX_MIME="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  const blob=await zip.generateAsync({type:"blob", mimeType:XLSX_MIME});  // 엑셀 MIME 지정(.zip 덧붙음 방지)
+  const file=new File([blob], fname, {type:XLSX_MIME});
+  closeExport();
+  // 모바일: 공유 시트(카카오톡 전송·파일/드라이브 저장 등) 사용, 미지원 시 일반 다운로드
+  if(navigator.canShare && navigator.canShare({files:[file]})){
+    try{ await navigator.share({files:[file], title:fname}); return; }
+    catch(e){ if(e && e.name==="AbortError") return; }   // 사용자가 취소하면 종료, 그 외엔 아래 다운로드로 폴백
+  }
+  const a=document.createElement("a"); a.href=URL.createObjectURL(file); a.download=fname;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 4000);
+}
+const NCOL=13, S_DEF=0,S_TITLE=1,S_SUB=2,S_LABEL=3,S_VALUE=4,S_HEAD=5,S_DATA=6,S_NUM=7,S_TLABEL=8,S_TNUM=9,S_FUELL=10,S_FUELV=11;
+function colName(i){ let s=""; while(i>=0){ s=String.fromCharCode(65+(i%26))+s; i=Math.floor(i/26)-1; } return s; }
+function xesc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function cell(col,row,style,value,opt){ opt=opt||{}; const ref=colName(col)+row;
+  if(opt.formula&&value!=null) return `<c r="${ref}" s="${style}"><f>${xesc(value)}</f></c>`;
+  if(value==null||value==="") return `<c r="${ref}" s="${style}"/>`;
+  if(opt.number) return `<c r="${ref}" s="${style}"><v>${value}</v></c>`;
+  return `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${xesc(value)}</t></is></c>`;
+}
+function buildSheetXml(o){
+  // A운행일자 B출발 C도착 D방문처 E업무구분 F입력구분 G출발키로 H도착키로 I운행거리 J유류비 K주차비 L통행료 M금액합계
+  const periodLabel=o.periodLabel;
+  const trips=o.trips, merges=[]; let rows="";
+  const nData=trips.length?trips.length:1, firstData=12, lastData=firstData+nData-1, totalRow=lastData+1, grandRow=totalRow+1, noteRow=grandRow+1;
+  const last=colName(NCOL-1);
+  rows+=`<row r="1" ht="30" customHeight="1">`+cell(0,1,S_TITLE,"차량운행내역기록부"); for(let c=1;c<NCOL;c++) rows+=cell(c,1,S_TITLE); rows+="</row>"; merges.push(`A1:${last}1`);
+  rows+=`<row r="2">`+cell(0,2,S_SUB,periodLabel); for(let c=1;c<NCOL;c++) rows+=cell(c,2,S_SUB); rows+="</row>"; merges.push(`A2:${last}2`);
+  rows+=`<row r="3" ht="6" customHeight="1"></row>`;
+  const dept=`${o.company} ${o.dept}`.trim();
+  // R4: 부서 + 결재 헤더 (결재 라벨 H, 담당~대표이사 I~M 각 1칸)
+  rows+=`<row r="4" ht="18" customHeight="1">`+cell(0,4,S_LABEL,"부 서")+cell(1,4,S_LABEL)+cell(2,4,S_VALUE,dept); for(let c=3;c<=6;c++) rows+=cell(c,4,S_VALUE);
+  rows+=cell(7,4,S_LABEL,"결 재")+cell(8,4,S_LABEL,"담당")+cell(9,4,S_LABEL,"팀장")+cell(10,4,S_LABEL,"실장")+cell(11,4,S_LABEL,"사업부장")+cell(12,4,S_LABEL,"대표이사"); rows+="</row>";
+  merges.push("A4:B4","C4:G4","H4:H7");
+  // R5: 성명 + 결재 서명칸(각 1칸 세로 병합)
+  rows+=`<row r="5" ht="24" customHeight="1">`+cell(0,5,S_LABEL,"성 명")+cell(1,5,S_LABEL)+cell(2,5,S_VALUE,o.name); for(let c=3;c<=6;c++) rows+=cell(c,5,S_VALUE);
+  rows+=cell(7,5,S_LABEL); for(let c=8;c<=12;c++) rows+=cell(c,5,S_VALUE); rows+="</row>";
+  merges.push("A5:B5","C5:G5","I5:I7","J5:J7","K5:K7","L5:L7","M5:M7");
+  // R6: 차량번호
+  rows+=`<row r="6" ht="18" customHeight="1">`+cell(0,6,S_LABEL,"차량번호")+cell(1,6,S_LABEL)+cell(2,6,S_VALUE,o.plate); for(let c=3;c<=6;c++) rows+=cell(c,6,S_VALUE);
+  rows+=cell(7,6,S_LABEL); for(let c=8;c<=12;c++) rows+=cell(c,6,S_VALUE); rows+="</row>"; merges.push("A6:B6","C6:G6");
+  // R7: 차종
+  rows+=`<row r="7" ht="18" customHeight="1">`+cell(0,7,S_LABEL,"차 종")+cell(1,7,S_LABEL)+cell(2,7,S_VALUE,o.vehicleType); for(let c=3;c<=6;c++) rows+=cell(c,7,S_VALUE);
+  rows+=cell(7,7,S_LABEL); for(let c=8;c<=12;c++) rows+=cell(c,7,S_VALUE); rows+="</row>"; merges.push("A7:B7","C7:G7");
+  rows+=`<row r="8" ht="6" customHeight="1"></row>`;
+  // R9: 총운행거리 / 기본지급액 / 유류 기준단가
+  const baseIf=`IF(C9<=499,0,IF(C9<=999,70000,IF(C9<=1499,90000,IF(C9<=1999,110000,IF(C9<=2499,130000,150000)))))`;
+  rows+=`<row r="9" ht="20" customHeight="1">`+cell(0,9,S_LABEL,"총 운행거리(Km)")+cell(1,9,S_LABEL)+cell(2,9,S_NUM,`I${totalRow}`,{formula:true})+cell(3,9,S_NUM)
+    +cell(4,9,S_LABEL,"기본지급액(원)")+cell(5,9,S_LABEL)+cell(6,9,S_NUM,baseIf,{formula:true})+cell(7,9,S_NUM)
+    +cell(8,9,S_LABEL,"■ 유류 기준단가")+cell(9,9,S_LABEL)+cell(10,9,S_FUELV,`${o.fuel}원/km`)+cell(11,9,S_FUELV)+cell(12,9,S_FUELV);
+  rows+="</row>"; merges.push("A9:B9","C9:D9","E9:F9","G9:H9","I9:J9","K9:M9");
+  rows+=`<row r="10" ht="6" customHeight="1"></row>`;
+  const headers=["운행일자","출발지역","도착지역","방문처","업무\n구분","입력\n구분","출발시\n키로수","도착시\n키로수","운행거리\n(km)","유류비","주차비","통행료","금액합계"];
+  rows+=`<row r="11" ht="34" customHeight="1">`; for(let c=0;c<NCOL;c++) rows+=cell(c,11,S_HEAD,headers[c]); rows+="</row>";
+  if(!trips.length){ const r=firstData; rows+=`<row r="${r}">`; for(let c=0;c<6;c++) rows+=cell(c,r,S_DATA); for(let c=6;c<NCOL;c++) rows+=cell(c,r,S_NUM); rows+="</row>"; }
+  else { let r=firstData; trips.forEach(t=>{
+    rows+=`<row r="${r}">`;
+    rows+=cell(0,r,S_DATA,fmtDate(t.start_time))+cell(1,r,S_DATA,toDong(t.start_address))+cell(2,r,S_DATA,toDong(t.end_address))+cell(3,r,S_DATA,t.visit_place||"")+cell(4,r,S_DATA,t.purpose||"")+cell(5,r,S_DATA,t.is_manual?"수기":"자동");
+    const so=Math.round(t.start_odometer||0), eo=Math.round(t.end_odometer||0);
+    rows+=cell(6,r,S_NUM,so,{number:true})+cell(7,r,S_NUM,eo,{number:true})+cell(8,r,S_NUM,`H${r}-G${r}`,{formula:true});
+    const km=Math.max(0,eo-so);
+    rows+=cell(9,r,S_NUM,km*o.fuel,{number:true})+cell(10,r,S_NUM)+cell(11,r,S_NUM)+cell(12,r,S_NUM,`SUM(J${r}:L${r})`,{formula:true});
+    rows+="</row>"; r++;
+  }); }
+  rows+=`<row r="${totalRow}" ht="20" customHeight="1">`+cell(0,totalRow,S_TLABEL,"운행 내역 합계"); for(let c=1;c<=7;c++) rows+=cell(c,totalRow,S_TLABEL);
+  rows+=cell(8,totalRow,S_TNUM,`SUM(I${firstData}:I${lastData})`,{formula:true})+cell(9,totalRow,S_TNUM,`SUM(J${firstData}:J${lastData})`,{formula:true})+cell(10,totalRow,S_TNUM,`SUM(K${firstData}:K${lastData})`,{formula:true})+cell(11,totalRow,S_TNUM,`SUM(L${firstData}:L${lastData})`,{formula:true})+cell(12,totalRow,S_TNUM,`SUM(M${firstData}:M${lastData})`,{formula:true});
+  rows+="</row>"; merges.push(`A${totalRow}:H${totalRow}`);
+  rows+=`<row r="${grandRow}" ht="22" customHeight="1">`+cell(0,grandRow,S_TLABEL,"당월 차량운행비 총계"); for(let c=1;c<=11;c++) rows+=cell(c,grandRow,S_TLABEL);
+  rows+=cell(12,grandRow,S_TNUM,`M${totalRow}`,{formula:true}); rows+="</row>"; merges.push(`A${grandRow}:L${grandRow}`);
+  const note=`※ 유류비 = 운행거리 × 단가 (자동계산) · 입력구분: 자동=GPS 기록, 수기=직접 입력 · 주차비·통행료는 직접 입력하세요.`;
+  rows+=`<row r="${noteRow}">`+cell(0,noteRow,S_DEF,note); for(let c=1;c<NCOL;c++) rows+=cell(c,noteRow,S_DEF); rows+="</row>"; merges.push(`A${noteRow}:${last}${noteRow}`);
+  const cols=`<cols><col min="1" max="1" width="11"/><col min="2" max="3" width="15"/><col min="4" max="4" width="11"/><col min="5" max="5" width="9"/><col min="6" max="6" width="7"/><col min="7" max="8" width="9"/><col min="9" max="9" width="8"/><col min="10" max="10" width="9"/><col min="11" max="12" width="8"/><col min="13" max="13" width="9"/></cols>`;
+  let mergeXml=`<mergeCells count="${merges.length}">`; merges.forEach(m=>mergeXml+=`<mergeCell ref="${m}"/>`); mergeXml+="</mergeCells>";
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>${cols}<sheetData>${rows}</sheetData>${mergeXml}<printOptions horizontalCentered="1"/><pageMargins left="0.2" right="0.2" top="0.3" bottom="0.3" header="0.2" footer="0.2"/><pageSetup paperSize="9" orientation="portrait" fitToWidth="1" fitToHeight="0"/></worksheet>`;
+}
+const XLSX_CT=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`;
+const XLSX_RELS=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
+const XLSX_WB=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="운행기록" sheetId="1" r:id="rId1"/></sheets></workbook>`;
+const XLSX_WBR=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+const XLSX_STY=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0"/></numFmts><fonts count="3"><font><sz val="9"/><name val="맑은 고딕"/></font><font><b/><sz val="9"/><name val="맑은 고딕"/></font><font><b/><sz val="15"/><name val="맑은 고딕"/></font></fonts><fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE6E8EA"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFF2CC"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color indexed="64"/></left><right style="thin"><color indexed="64"/></right><top style="thin"><color indexed="64"/></top><bottom style="thin"><color indexed="64"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="12"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/><xf numFmtId="0" fontId="2" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="2" borderId="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="164" fontId="1" fillId="2" borderId="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="3" borderId="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="0" fontId="1" fillId="3" borderId="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+
+// ===== helpers =====
+function val(id){return document.getElementById(id).value;}
+function setv(id,v){document.getElementById(id).value=v;}
+function esc(s){return String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));}
+// 주소를 '동/읍/면/가/리'까지만 남기고 번지·건물번호 등 뒷부분 제거
+function toDong(addr){
+  if(!addr) return "";
+  // 콤마(OSM/카카오) 제거 + 공백 정리
+  const s=String(addr).replace(/,/g," ").replace(/\s+/g," ").trim();
+  const parts=s.split(" ");
+  const out=[];
+  for(const p of parts){ out.push(p); if(/(동|읍|면|가|리)$/.test(p)) return out.join(" "); }
+  // 동이 없으면(도로명 등) 숫자(번지/건물번호) 토큰 직전까지만
+  const out2=[];
+  for(const p of parts){ if(/\d/.test(p)) break; out2.push(p); }
+  return out2.length ? out2.join(" ") : s;
+}
+
+// 저장된 자격증명이 있으면 자동 로그인
+window.addEventListener("load", ()=>{
+  try{
+    const c=localStorage.getItem("acts_creds");
+    if(c){
+      const o=JSON.parse(c);
+      setv("li_user", o.u||"");
+      setv("li_pw", o.p||"");
+      const r=document.getElementById("li_remember"); if(r) r.checked=true;
+      doLogin();
+    }
+  }catch(e){}
+});
+</script>
+</body>
+</html>
